@@ -2,7 +2,7 @@
 
 namespace ZanySoft\Cpanel;
 
-use Config;
+use Config, Exception;
 
 Class Cpanel extends xmlapi {
     protected $config;
@@ -19,25 +19,38 @@ Class Cpanel extends xmlapi {
 
         $config = Config::get('cpanel');
 
-        if ($config) {
-            $this->username      = $config['username'];
-            $this->password      = $config['password'];
-            $this->domain        = $config['domain'];
-            $this->subdomain_dir = $config['subdomain_dir'];
-
-            $this->set_host($config['ip']);
-            $this->password_auth($config['username'], $config['password']);
-            $this->set_port($config['port']);
-            $this->set_debug($config['debug']);
-
-            $this->config = $config;
+        if (!$config) {
+            $config = include(__DIR__ . '/../config/cpanel.php');
         }
 
-        parent::__construct($config['ip']);
+        if ($config['ip']) {
+            parent::__construct($config['ip']);
+        } else {
+            throw new Exception('Host IP not defined.');
+        }
+
+        $this->username      = $config['username'];
+        $this->password      = $config['password'];
+        $this->domain        = $config['domain'];
+        $this->subdomain_dir = $config['subdomain_dir'];
+
+        if ($config['username'] && $config['password']) {
+            $this->password_auth($config['username'], $config['password']);
+        }
+
+        $this->set_host($config['ip']);
+        $this->set_debug($config['debug']);
+        $this->set_port($config['port']);
     }
 
     public function setHost($host) {
         $this->set_host($host);
+
+        return $this;
+    }
+
+    public function setPort($port) {
+        $this->set_port($port);
 
         return $this;
     }
@@ -52,14 +65,36 @@ Class Cpanel extends xmlapi {
         return $this;
     }
 
-    public function api1_query($user, $module, $function, $args = array()) {
+    public function api1($user, $module, $function, $args = array()) {
 
-        $result = $this->api1($user, $module, $function, $args = array());
+        if (!isset($user) || !isset($module) || !isset($function)) {
+            $msg = "api1 requires that a username, module and function are passed to it";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
+        if (!is_array($args)) {
+            $msg = "api2_query requires that an array is passed to it as the 4th parameter";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
+
+        $result = $this->api1_query($user, $module, $function, $args = array());
 
         return $this->returnResult($result);
     }
 
     public function api2($user, $module, $function, $args = array()) {
+
+        if (!isset($user) || !isset($module) || !isset($function)) {
+            $msg = "api2 requires that a username, module and function are passed to it";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
+        if (!is_array($args)) {
+            $msg = "api2_query requires that an array is passed to it as the 4th parameter";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
 
         $result = $this->api2_query($user, $module, $function, $args);
 
@@ -83,7 +118,7 @@ Class Cpanel extends xmlapi {
         $domain = str_replace('www.', '', $domain);
 
         if (!$domain || mb_strpos($domain, '.') === false) {
-            return (object)array('reason' => 'Please sent main domain first', 'result' => 0);
+            return array('reason' => 'Please sent main domain first', 'result' => 0);
         }
 
         $result = $this->api2_query($username, 'SubDomain', 'addsubdomain', array(
@@ -113,7 +148,7 @@ Class Cpanel extends xmlapi {
         $domain = str_replace('www.', '', $domain);
 
         if (!$domain || mb_strpos($domain, '.') === false) {
-            return (object)array('reason' => 'Please sent main domain first', 'result' => 0);
+            return array('reason' => 'Please sent main domain first', 'result' => 0);
         }
 
         $result = $this->api2_query($username, 'SubDomain', 'delsubdomain', array(
@@ -126,13 +161,19 @@ Class Cpanel extends xmlapi {
 
     public function createdb($db_name) {
 
+        if (!isset($db_name) || empty($db_name)) {
+            $msg = "database name is  required.";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
+
         $name_length = 54 - strlen($this->username);
 
         $db_name       = str_replace($this->username . '_', '', $this->slug($db_name, '_'));
         $database_name = $this->username . "_" . $db_name;
 
         if (strlen($db_name) > $name_length || strlen($db_name) < 4) {
-            return (object)array('reason' => 'Database name should be greater than 4 and less than ' . $name_length . ' characters.', 'result' => 0);
+            return array('reason' => 'Database name should be greater than 4 and less than ' . $name_length . ' characters.', 'result' => 0);
         }
 
         $result = $this->api2_query($this->username, "MysqlFE", "createdb", array('db' => $database_name));
@@ -141,6 +182,12 @@ Class Cpanel extends xmlapi {
     }
 
     public function checkdbuser($db_user) {
+
+        if (!isset($db_user) || empty($db_user)) {
+            $msg = "Database username is  required.";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
 
         $dbuser = $this->username . '_' . ($db_user ? str_replace($this->username . '_', '', $db_user) : "myadmin");
 
@@ -151,8 +198,14 @@ Class Cpanel extends xmlapi {
 
     public function createdbuser($db_user, $db_pass) {
 
+        if (!isset($db_user) || !isset($db_pass)) {
+            $msg = "Database username and password is required.";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
+
         if (!$db_user || !$db_pass) {
-            return (object)array('reason' => 'Please sent database username and password.', 'result' => '0');
+            return array('reason' => 'Please sent database username and password.', 'result' => '0');
         }
 
         $user_length = 16 - strlen($this->username);
@@ -160,19 +213,19 @@ Class Cpanel extends xmlapi {
         $dbuser      = $this->username . "_" . $db_user;
 
         if (strlen($db_user) > $user_length || strlen($db_user) < 4) {
-            return (object)array('reason' => 'Database username should be greater than 4 and less than ' . $user_length . ' characters.', 'result' => 0);
+            return array('reason' => 'Database username should be greater than 4 and less than ' . $user_length . ' characters.', 'result' => 0);
         }
 
         $validate = $this->checkPassword($db_pass);
 
         if ($validate != '') {
-            return (object)array('reason' => $validate, 'result' => '0');
+            return array('reason' => $validate, 'result' => '0');
         }
 
         $user = $this->checkdbuser($dbuser);
 
-        if ($user->result == 1) {
-            return (object)array('reason' => 'Database user ' . $dbuser . ' already exist.', 'result' => '0');
+        if ($user['result'] == 1) {
+            return array('reason' => 'Database user ' . $dbuser . ' already exist.', 'result' => '0');
         } else {
             $user = $this->api2_query(
                 $this->username,
@@ -186,6 +239,12 @@ Class Cpanel extends xmlapi {
     }
 
     protected function setdbuser($db_name, $db_user, $privileges = '') {
+
+        if (!isset($db_name) || !isset($db_user)) {
+            $msg = "Database name and username is required.";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
 
         $dbname = $this->username . "_" . str_replace($this->username . '_', '', $db_name);
         $dbuser = $this->username . '_' . ($db_user ? str_replace($this->username . '_', '', $db_user) : "myadmin"); //be careful this can only have a maximum of 7 characters
@@ -203,11 +262,12 @@ Class Cpanel extends xmlapi {
 
     public function accountsList($search_type = '', $search = '') {
 
-        return $this->listaccts($search_type, $search);
+        return $this->returnResult($this->listaccts($search_type, $search));
 
     }
 
     public function accountDetials($username = '') {
+
         $username = $username ? $username : $this->username;
 
         return $this->accountsummary($username);
@@ -215,8 +275,19 @@ Class Cpanel extends xmlapi {
 
     protected function returnResult($result) {
 
-        $json   = json_encode($result);
-        $result = json_decode($json, TRUE);
+        if ($this->get_output() == 'xml') {
+            $response = simplexml_load_string($result, null, LIBXML_NOERROR | LIBXML_NOWARNING);
+
+            if ($response) {
+                $json   = json_encode($response);
+                $result = json_decode($json, TRUE);
+            }
+        } else if ($this->get_output() == 'json') {
+            $result = json_decode($result, TRUE);
+        } else {
+            $json   = json_encode($result);
+            $result = json_decode($json, TRUE);
+        }
 
         if (isset($result['data'])) {
             $data = $result['data'];
@@ -232,7 +303,7 @@ Class Cpanel extends xmlapi {
                     $reason = trim(strstr($reason, ' at ', true));
                 }
 
-                return (object)array('reason' => $reason, 'result' => (int)$status);
+                return array('reason' => $reason, 'result' => (int)$status);
             } else {
                 if (isset($result['func'])) {
                     $function = $result['func'];
@@ -262,7 +333,7 @@ Class Cpanel extends xmlapi {
                     }
                 }
 
-                return (object)array('reason' => $reason, 'result' => (int)$data);
+                return array('reason' => $reason, 'result' => (int)$data);
             }
         } else {
             return $result;
@@ -299,22 +370,4 @@ Class Cpanel extends xmlapi {
 
         return '';
     }
-
-    /*protected function toArray($obj) {
-        if (is_object($obj)) {
-            $obj = (array) $obj;
-        }
-        if (is_array($obj)) {
-            $new = array();
-            foreach ($obj as $key => $val) {
-                $key       = preg_replace('/[^a-zA-Z0-9 _-]/', "", $key);
-                $new[$key] = $this->toArray($val);
-            }
-        } else {
-            $new = $obj;
-        }
-
-        return $new;
-    }*/
-
 }
