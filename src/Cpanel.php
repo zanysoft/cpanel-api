@@ -181,6 +181,23 @@ Class Cpanel extends xmlapi {
         return $this->returnResult($result);
     }
 
+    public function deletedb($db_name) {
+
+        if (!isset($db_name) || empty($db_name)) {
+            $msg = "database name is  required.";
+
+            return array('reason' => $msg, 'result' => 0);
+        }
+        $name_length = 54 - strlen($this->username);
+
+        $db_name       = str_replace($this->username . '_', '', $this->slug($db_name, '_'));
+        $database_name = $this->username . "_" . $db_name;
+
+        $result = $this->api2_query($this->username, "MysqlFE", "deletedb", array('db' => $database_name));
+
+        return $this->returnResult($result);
+    }
+
     public function checkdbuser($db_user) {
 
         if (!isset($db_user) || empty($db_user)) {
