@@ -1,5 +1,5 @@
 # Cpanel's API
-Cpanel's API 1 and 2 for Laravel 5.2
+Cpanel's API 1 and 2 for Laravel
 
 ## Contents
 - [Installation Guide](#installation-guide)
@@ -13,14 +13,18 @@ Require this package in your composer.json and update composer. This will downlo
 
     composer require zanysoft/cpanel-api
 
-After updating composer, add the ServiceProvider to the providers array in config/app.php
+If using < Laravel 5.5, add the ServiceProvider and Aliases in config/app.php
 
-    ZanySoft\Cpanel\CpanelServiceProvider::class,
-
-You can optionally use the facade for shorter code. Add this to your facades:
-
-    'Cpanel' => ZanySoft\Cpanel\CpanelFacade::class,
-
+    'providers' => [
+        '...',
+        ZanySoft\Cpanel\CpanelServiceProvider::class,
+    ];
+    
+    'aliases' => [
+        '...',
+        'Cpanel' => ZanySoft\Cpanel\Facades\Cpanel::class,
+    ];
+    
 ### Configuration
 The defaults configuration settings are set in `config/cpanel.php`. Copy this file to your own config directory to modify the values. You can publish the config using this command:
 
@@ -30,22 +34,28 @@ The defaults configuration settings are set in `config/cpanel.php`. Copy this fi
 
 You can create a new Cpanel instance.
 
-    $cpanel = App::make('cpanel');
+    $cpanel = Cpanel::make();
     $cpanel->setHost($host_ip);
     $cpanel->setAuth($username, $password) //if you don't want to set in config file
     return $cpanel->api2($user, $module, $function, $args = array());
 
-Or use the facade with chain the methods:
+Or use the facade:
 
     return Cpanel::api2($user, $module, $function, $args = array());
     
-You can use with chain the methods:
+You can use the facade with chain the methods:
 
     return Cpanel::setHost($host_ip)->setAuth($username, $password)->api2($user, $module, $function, $args = array());
 
 You can set the authentication before chain if you don't want to set this in config/cpanel.php file.
 
     return Cpanel::setAuth($username, $password)->api2($user, $module, $function, $args = array());
+    
+You can set host, username and pasword on createing instance if you don't want to set this in config/cpanel.php file.
+
+    $cpanel = new \ZanySoft\Cpanel\Cpanel($host,$username, $password);
+    // OR
+    $cpanel = Cpanel::make($host,$username, $password);
 
 ### Functions
 This is the example when you want to define your configuration

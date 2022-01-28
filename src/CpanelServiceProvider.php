@@ -54,7 +54,5 @@ class CpanelServiceProvider extends ServiceProvider {
     {
         return str_contains($this->app->version(), 'Lumen') === true;
     }
-
 }
-
 ?>

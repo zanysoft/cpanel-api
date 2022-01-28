@@ -1,17 +1,37 @@
 {
-  "name": "zanysoft/cpanel-api",
-  "description": "Cpanel's API",
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Zany Soft",
-      "email": "info@zanysoft.co"
-    }
-  ],
-  "minimum-stability": "dev",
-  "autoload": {
-    "psr-4": {
-      "ZanySoft\\Cpanel\\": "src/"
-    }
-  }
+    "name": "zanysoft/cpanel-api",
+    "description": "Cpanel's API",
+    "keywords": [
+        "laravel",
+        "cpanel",
+        "cpanel api",
+        "whm"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Zany Soft",
+            "email": "info@zanysoft.net"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "illuminate/support": "^6.0 |^7.0|^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ZanySoft\\Cpanel\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ZanySoft\\Cpanel\\CpanelServiceProvider"
+            ],
+            "aliases": {
+                "Cpanel": "ZanySoft\\Cpanel\\Facades\\Cpanel"
+            }
+        }
+    },
+    "minimum-stability": "stable"
 }
