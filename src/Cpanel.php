@@ -13,54 +13,30 @@ class Cpanel extends xmlapi
 
     protected $password = '';
 
-    public function __construct($host = null, $user = null, $password = null)
+    public function __construct($host = null, $username = null, $password = null)
     {
-
         $config = Config::get('cpanel');
 
-        if (!$config) {
-            $config = include(__DIR__ . '/../config/cpanel.php');
-        }
+        $host = $host ?: $config['ip'];
+        $username = $username ?: $config['username'];
+        $password = $password ?: $config['password'];
 
         if (!$host) {
-            $host = $config['ip'];
-            $this->setHost($host);
-        }
-
-        if ($host) {
             throw new Exception('Host IP not defined.');
         }
 
-        if (!$user) {
-            $user = $config['username'];
-        }
-
-        if (!$password) {
-            $password = $config['password'];
-        }
-
-        $this->username = $user;
-        $this->password = $password;
-
-        if ($user) {
-            $this->set_user($user);
-        }
-
-        if ($password) {
-            $this->set_password($password);
-        }
-
-        $this->set_host($host);
+        $this->setAuth($username, $password);
+        $this->setHost($host);
         $this->set_debug($config['debug']);
-        $this->set_port($config['port']);
+        $this->setPort($config['port']);
 
-        parent::__construct($host, $user, $password);
+        parent::__construct($host, $username, $password);
     }
 
     /**
      * @return $this
      */
-    public function make($host = null, $user = null, $password = null)
+    public function make($host = null, $username = null, $password = null)
     {
         if ($host) {
             $this->set_host($host);

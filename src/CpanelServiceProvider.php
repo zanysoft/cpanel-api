@@ -4,7 +4,8 @@ namespace ZanySoft\Cpanel;
 
 use Illuminate\Support\ServiceProvider;
 
-class CpanelServiceProvider extends ServiceProvider {
+class CpanelServiceProvider extends ServiceProvider
+{
 
 
     /**
@@ -12,7 +13,12 @@ class CpanelServiceProvider extends ServiceProvider {
      *
      * @return void
      */
-    public function register() {
+    public function register()
+    {
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/cpanel.php', 'cpanel'
+        );
+
         $this->registerCpanelService();
 
         if ($this->app->runningInConsole()) {
@@ -25,9 +31,16 @@ class CpanelServiceProvider extends ServiceProvider {
      *
      * @return void
      */
-    public function registerCpanelService() {
+    public function registerCpanelService()
+    {
         $this->app->singleton('cpanel', function ($app) {
-            return new Cpanel($app);
+            $config = $app['config']->get('cpanel');
+
+            $host = $config['host'] ?? null;
+            $username = $config['username'] ?? null;
+            $password = $config['password'] ?? null;
+
+            return new Cpanel($host, $username, $password);
         });
     }
 
@@ -55,4 +68,5 @@ class CpanelServiceProvider extends ServiceProvider {
         return str_contains($this->app->version(), 'Lumen') === true;
     }
 }
+
 ?>
