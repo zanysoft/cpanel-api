@@ -3,6 +3,7 @@
     "description": "Cpanel's API",
     "keywords": [
         "laravel",
+        "laravel9",
         "cpanel",
         "cpanel api",
         "whm"
@@ -15,8 +16,8 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
-        "illuminate/support": "^6.0 |^7.0|^8.0"
+        "php": ">=7.4",
+        "illuminate/support": "^6.0 |^7.0|^8.0|^9.0"
     },
     "autoload": {
         "psr-4": {

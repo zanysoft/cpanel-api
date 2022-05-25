@@ -9,10 +9,24 @@ class Cpanel extends xmlapi
 {
     protected $config;
 
+    /**
+     * @var string
+     */
     protected $username = '';
 
+    /**
+     * @var string
+     */
     protected $password = '';
 
+    /**
+     * All parameters to this function are optional and can be set via the accessor functions or constants
+     *
+     * @param string $host The host to perform queries on
+     * @param string $username The username to authenticate as
+     * @param string $password The password to authenticate with
+     * @throws Exception
+     */
     public function __construct($host = null, $username = null, $password = null)
     {
         $config = Config::get('cpanel');
@@ -36,7 +50,7 @@ class Cpanel extends xmlapi
     /**
      * @return $this
      */
-    public function make($host = null, $username = null, $password = null)
+    public function make($host = null, $username = null, $password = null): Cpanel
     {
         if ($host) {
             $this->set_host($host);
@@ -54,7 +68,7 @@ class Cpanel extends xmlapi
      * @param $host
      * @return $this
      */
-    public function setHost($host)
+    public function setHost($host): Cpanel
     {
         $this->set_host($host);
 
@@ -66,7 +80,7 @@ class Cpanel extends xmlapi
      * @return $this
      * @throws Exception
      */
-    public function setPort($port)
+    public function setPort($port): Cpanel
     {
         $this->set_port($port);
 
@@ -78,7 +92,7 @@ class Cpanel extends xmlapi
      * @param $password
      * @return $this
      */
-    public function setAuth($username, $password)
+    public function setAuth($username, $password): Cpanel
     {
         $this->username = $username;
         $this->password = $password;
@@ -92,7 +106,7 @@ class Cpanel extends xmlapi
      * @param $user
      * @param $module
      * @param $function
-     * @param array $args
+     * @param $args
      * @return array|mixed
      */
     public function api1($user, $module, $function, $args = array())
@@ -117,7 +131,7 @@ class Cpanel extends xmlapi
      * @param $user
      * @param $module
      * @param $function
-     * @param array $args
+     * @param $args
      * @return array|mixed
      */
     public function api2($user, $module, $function, $args = array())
@@ -141,9 +155,9 @@ class Cpanel extends xmlapi
 
     /**
      * @param $subdomain
-     * @param string $username
-     * @param string $subdomain_dir
-     * @param string $main_domain
+     * @param $username
+     * @param $subdomain_dir
+     * @param $main_domain
      * @return array|mixed
      */
     public function createSubdomain($subdomain, $username = '', $subdomain_dir = '', $main_domain = '')
@@ -179,11 +193,11 @@ class Cpanel extends xmlapi
     }
 
     /**
-     * @param $subdomain
+     * @param string $subdomain
      * @param string $main_domain
      * @return array|mixed
      */
-    public function removeSubdomain($subdomain, $main_domain = '')
+    public function removeSubdomain(string $subdomain, string $main_domain = '')
     {
 
         $username = $this->username;
@@ -212,10 +226,10 @@ class Cpanel extends xmlapi
     }
 
     /**
-     * @param $db_name
+     * @param string $db_name
      * @return array|mixed
      */
-    public function createdb($db_name)
+    public function createdb(string $db_name)
     {
 
         if (!isset($db_name) || empty($db_name)) {
@@ -239,12 +253,11 @@ class Cpanel extends xmlapi
     }
 
     /**
-     * @param $db_user
+     * @param string $db_user
      * @return array|mixed
      */
-    public function checkdbuser($db_user)
+    public function checkdbuser(string $db_user)
     {
-
         if (!isset($db_user) || empty($db_user)) {
             $msg = "Database username is  required.";
 
@@ -307,12 +320,12 @@ class Cpanel extends xmlapi
     }
 
     /**
-     * @param $db_name
-     * @param $db_user
+     * @param string $db_name
+     * @param string $db_user
      * @param string $privileges
      * @return array|mixed
      */
-    protected function setdbuser($db_name, $db_user, $privileges = '')
+    protected function setdbuser(string $db_name, string $db_user, string $privileges = '')
     {
 
         if (!isset($db_name) || !isset($db_user)) {
@@ -340,20 +353,17 @@ class Cpanel extends xmlapi
      * @param string $search
      * @return array|mixed
      */
-    public function accountsList($search_type = '', $search = '')
+    public function accountsList(string $search_type = '', string $search = '')
     {
-
         return $this->returnResult($this->listaccts($search_type, $search));
-
     }
 
     /**
      * @param string $username
      * @return array|bool|mixed|SimpleXMLElement|null
      */
-    public function accountDetials($username = '')
+    public function accountDetials(string $username = '')
     {
-
         $username = $username ? $username : $this->username;
 
         return $this->accountsummary($username);
