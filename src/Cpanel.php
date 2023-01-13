@@ -184,7 +184,7 @@ class Cpanel extends xmlapi
         $result = $this->api2_query($username, 'SubDomain', 'addsubdomain', array(
                 'domain' => $subdomain,
                 'rootdomain' => $domain,
-                'dir' => '/public_html/' . $subdomain_dir,
+                'dir' => $subdomain_dir,
                 'disallowdot' => 1
             )
         );
@@ -238,16 +238,32 @@ class Cpanel extends xmlapi
             return array('reason' => $msg, 'result' => 0);
         }
 
-        $name_length = 54 - strlen($this->username);
+        $name_length = 63;
+        if (!$this->hasUsernamePrefixed($db_name)) {
+            $name_length = $name_length - (strlen($this->username) + 1);
+        }
 
-        $db_name = str_replace($this->username . '_', '', $this->slug($db_name, '_'));
-        $database_name = $this->username . "_" . $db_name;
+        $database_name = $this->fixName($db_name);
 
         if (strlen($db_name) > $name_length || strlen($db_name) < 4) {
             return array('reason' => 'Database name should be greater than 4 and less than ' . $name_length . ' characters.', 'result' => 0);
         }
 
         $result = $this->api2_query($this->username, "MysqlFE", "createdb", array('db' => $database_name));
+
+        return $this->returnResult($result);
+    }
+
+    public function deletedb($db_name)
+    {
+        if (!isset($db_name) || empty($db_name)) {
+            $msg = "database name is  required.";
+            return array('reason' => $msg, 'result' => 0);
+        }
+
+        $db_name = $this->fixName($db_name);
+
+        $result = $this->api2_query($this->username, "MysqlFE", "deletedb", array('db' => $db_name));
 
         return $this->returnResult($result);
     }
@@ -264,7 +280,7 @@ class Cpanel extends xmlapi
             return array('reason' => $msg, 'result' => 0);
         }
 
-        $dbuser = $this->username . '_' . ($db_user ? str_replace($this->username . '_', '', $db_user) : "myadmin");
+        $dbuser = $this->fixName(($db_user ?: 'myadmin'));
 
         $user = $this->api2_query($this->username, "MysqlFE", "dbuserexists", array('dbuser' => $dbuser));
 
@@ -289,12 +305,15 @@ class Cpanel extends xmlapi
             return array('reason' => 'Please sent database username and password.', 'result' => '0');
         }
 
-        $user_length = 16 - strlen($this->username);
-        $db_user = str_replace($this->username . '_', '', $this->slug($db_user, '_'));
-        $dbuser = $this->username . "_" . $db_user;
+        $name_length = 32;
+        if (!$this->hasUsernamePrefixed($db_user)) {
+            $name_length = $name_length - (strlen($this->username) + 1);
+        }
 
-        if (strlen($db_user) > $user_length || strlen($db_user) < 4) {
-            return array('reason' => 'Database username should be greater than 4 and less than ' . $user_length . ' characters.', 'result' => 0);
+        $dbuser = $this->fixName($db_user);
+
+        if (strlen($db_user) > $name_length || strlen($db_user) < 4) {
+            return array('reason' => 'Database username should be greater than 4 and less than ' . $name_length . ' characters.', 'result' => 0);
         }
 
         $validate = $this->checkPassword($db_pass);
@@ -325,7 +344,7 @@ class Cpanel extends xmlapi
      * @param string $privileges
      * @return array|mixed
      */
-    protected function setdbuser(string $db_name, string $db_user, string $privileges = '')
+    public function setdbuser(string $db_name, string $db_user, string $privileges = '')
     {
 
         if (!isset($db_name) || !isset($db_user)) {
@@ -334,8 +353,8 @@ class Cpanel extends xmlapi
             return array('reason' => $msg, 'result' => 0);
         }
 
-        $dbname = $this->username . "_" . str_replace($this->username . '_', '', $db_name);
-        $dbuser = $this->username . '_' . ($db_user ? str_replace($this->username . '_', '', $db_user) : "myadmin"); //be careful this can only have a maximum of 7 characters
+        $dbname = $this->fixName($db_name);
+        $dbuser = $this->fixName($db_user);
 
         if (is_array($privileges)) {
             $privileges = implode(',', $privileges);
@@ -369,6 +388,19 @@ class Cpanel extends xmlapi
         return $this->accountsummary($username);
     }
 
+    public function createEmailAccount($email, $password, $quota = 500, $main_domain = '')
+    {
+        $result = $this->api2_query($this->username, 'Email', 'addpop', [
+                'domain' => $main_domain,
+                'email' => $email,
+                'password' => $password,
+                'quota' => $quota
+            ]
+        );
+
+        return $this->returnResult($result);
+    }
+
     /**
      * @param $result
      * @return array|mixed
@@ -393,8 +425,8 @@ class Cpanel extends xmlapi
         if (isset($result['data'])) {
             $data = $result['data'];
             if (is_array($data)) {
-                $reason = (string)$data['reason'];
-                $status = (string)$data['result'];
+                $reason = (string)(is_array($data['reason']) ? implode(', ', $data['reason']) : $data['reason']);
+                $result = (string)(is_array($data['result']) ? array_shift($data['result']) : $data['result']);
 
                 if (mb_strpos($reason, ')') !== false) {
                     $reason = ltrim(strstr($reason, ')'), ') ');
@@ -404,7 +436,7 @@ class Cpanel extends xmlapi
                     $reason = trim(strstr($reason, ' at ', true));
                 }
 
-                return array('reason' => $reason, 'result' => (int)$status);
+                return array('reason' => $reason, 'result' => (int)$result);
             } else {
                 if (isset($result['func'])) {
                     $function = $result['func'];
@@ -481,5 +513,26 @@ class Cpanel extends xmlapi
         }
 
         return '';
+    }
+
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    protected function hasUsernamePrefixed($name): bool
+    {
+        if (substr(strtolower($name), 0, strlen($this->username)) == strtolower($this->username)) {
+            return true;
+        }
+        return false;
+    }
+
+    protected function fixName($name)
+    {
+        if (!$this->hasUsernamePrefixed($name)) {
+            $name = $this->username . "_" . $name;
+        }
+        return $name;
     }
 }
