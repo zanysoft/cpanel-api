@@ -11,10 +11,13 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Zany Soft",
-            "email": "info@zanysoft.net"
+          "name": "Mubashar Ahmad",
+          "email": "zanysoft@outlook.com"
         }
     ],
+    "support": {
+        "email": "zanysoft@outlook.com"
+    },
     "require": {
         "php": ">=7.4",
         "illuminate/support": "^6.0 |^7.0|^8.0|^9.0|^10.0"
